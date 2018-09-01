@@ -1,0 +1,6 @@
+.idea/
+__pycache__/
+appJar.ini
+media/icon.gif
+test_log.log
+test_log.log.offset
