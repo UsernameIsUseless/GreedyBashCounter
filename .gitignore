@@ -4,3 +4,7 @@ appJar.ini
 test_log.log
 test_log.log.offset
 GreedyBashCounter.spec
+build/
+dist/
+media/doubloon_ex.ico
+
