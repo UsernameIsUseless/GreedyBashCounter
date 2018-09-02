@@ -1,3 +1,4 @@
+import os
 from re import sub
 from time import sleep
 from appJar import gui
@@ -34,7 +35,7 @@ class GreedyBashCounter(object):
         self.app.setSize(205, 242)
         self.app.setResizable(canResize=False)
         self.app.setFont(size=10)
-#        self.app.setIcon('media/icon.gif')
+        self.app.setIcon('media\icon.gif')
         self.app.addEntry("File", 0, 0)
         self.app.setEntryState("File", "disabled")
         self.app.setEntry('File', self.app.getSetting('log_path', default=''))
@@ -46,7 +47,8 @@ class GreedyBashCounter(object):
         self.app.addButton("Stop", self.start_stop, 0, 1)
         if not self.app.getSetting('log_path', default=''):
             self.app.setButtonState("Start", "disabled")
-        self.app.addButton("Reset", self.reset_stats, colspan=2)
+        self.app.addButton("Reset", self.reset_stats, 1, 0)
+        self.app.addButton('Override', self.manual_override, 1, 1)
         self.app.setButtonState("Stop", "disabled")
         self.app.stopLabelFrame()
 
@@ -97,6 +99,8 @@ class GreedyBashCounter(object):
             self.app.saveSettings()
             self.app.setEntry("File", log)
             self.app.setButtonState("Start", "active")
+    def manual_override(self):
+        pass
 
     def send_totals(self):
         formatted_data = 'Total LLs: {}, Average LLs: {}, ' \
