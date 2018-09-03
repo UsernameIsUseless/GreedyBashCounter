@@ -19,6 +19,7 @@ fight_began_string = 'A melee breaks out between the crews!'
 
 table_headers = [["Pirate", "LL Total", "LL Avg", "TLB", "TTB"]]
 
+version = '1.2'
 
 class GreedyBashCounter(object):
     active = False
@@ -48,7 +49,7 @@ class GreedyBashCounter(object):
         if not self.app.getSetting('log_path', default=''):
             self.app.setButtonState("Start", "disabled")
         self.app.addButton("Reset", self.reset_stats, 1, 0)
-        self.app.addButton('Override', self.manual_override, 1, 1)
+        self.app.addButton('Override', self.show_override_window, 1, 1)
         self.app.setButtonState("Stop", "disabled")
         self.app.stopLabelFrame()
 
@@ -78,19 +79,38 @@ class GreedyBashCounter(object):
                           actionButton='Send')
         self.app.stopSubWindow()
 
+        self.app.addMenuList('Menu', ['About', 'Clear TB Counters'],[self.menu, self.clear_this_battle_lls])
+
+        self.app.startSubWindow('About GBC', modal=True)
+        #self.app.setSize(555, 555)
+        #self.app.setResizable(canResize=False)
+        self.app.addLabel('a1', "GreedyBashCalculator")
+        self.app.addHorizontalSeparator()
+        self.app.addLabel('a2', "Created by:")
+        self.app.addLabel('a3', "Cajun of Obsidian")
+        self.app.addLabel('a4', "Version:")
+        self.app.addLabel('a5', version)
+        self.app.stopSubWindow()
+
+        self.app.startSubWindow('Override', modal=True)
+        self.app.hideTitleBar()
+        self.app.startLabelFrame('OverrideWindowLabel', hideTitle=True, colspan=2)
+        self.app.setSticky('ew')
+        self.app.addLabelEntry('LL', 0, 0)
+        self.app.addLabelEntry('TB', 1, 0)
+        self.app.addButton('Fix', self.fix_loss, 0, 1)
+        self.app.addButton('Cancel', self.hide_override_window, 1, 1)
+        self.app.stopLabelFrame()
+        self.app.stopSubWindow()
+
+
         self.app.go()
 
-    def start_stop(self, btn):
-        if btn == "Start" and not self.active:
-            self.active = True
-            self.app.setButtonState("Start", "disabled")
-            self.app.setButtonState("Stop", "active")
-            self.app.thread(self.read_log)
-        elif btn == "Stop" and self.active:
-            self.active = False
-            self.app.setButtonState("Start", "active")
-            self.app.setButtonState("Stop", "disabled")
+    # Menus
+    def menu(self):
+        self.app.showSubWindow('About GBC')
 
+    # Core Functions
     def get_log(self):
         log = self.app.openBox(title="Get Puzzle Pirates Log", dirName=None, fileTypes=[('log', '*.log')],
                                asFile=False, parent=None)
@@ -99,38 +119,35 @@ class GreedyBashCounter(object):
             self.app.saveSettings()
             self.app.setEntry("File", log)
             self.app.setButtonState("Start", "active")
-    def manual_override(self):
-        pass
 
-    def send_totals(self):
-        formatted_data = 'Total LLs: {}, Average LLs: {}, ' \
-                         'LLs Last Battle: {}, Battles: {}'.format(self.total_lls, self.average_lls,
-                                                                   self.last_battle_lls, self.battle_count)
-        self.app.info(formatted_data)
-        pp_frame = Application().connect(title_re='Puzzle Pirates*')
-        window = pp_frame.window()
-        window.set_focus()
-        clipboard.EmptyClipboard()
-        clipboard.win32clipboard.OpenClipboard()
-        clipboard.win32clipboard.SetClipboardText(formatted_data)
-        clipboard.win32clipboard.CloseClipboard()
-        SendKeys('+{INS}')
-        SendKeys('{ENTER}')
+    def individual_pirate_stat(self, pirate):
+        print('Updating Individual Pirate Stat for {}'.format(pirate))
+        self.app.openSubWindow("Per Pirate Statistics")
+        if not self.pirates.get(pirate):
+            print('Creating Pirate Dictionary')
+            self.pirates[pirate] = {
+                'row_id': 0,
+                'll_this_battle': 0,
+                'll_total': 0,
+                'll_average': 0,
+                'll_last_battle': 0
+            }
+            self.pirates[pirate]['row_id'] = max(self.pirates['row_ids']) + 1
+            self.pirates['row_ids'].append(self.pirates[pirate]['row_id'])
+            print('New pirate {} added with row_id {}'.format(pirate, self.pirates[pirate]['row_id']))
+            row_data = [pirate, self.pirates[pirate]['ll_total'], self.pirates[pirate]['ll_average'],
+                        self.pirates[pirate]['ll_last_battle'], self.pirates[pirate]['ll_this_battle']]
+            self.app.addTableRow('PirateStats', row_data)
+            print('Generic Pirate Row Created')
 
-    def send_pirate_stats(self, row_id):
-        row_data = self.app.getTableRow('PirateStats', row_id)
-        formatted_data = 'Pirate: {}, Total LLs: {}, Average LLs: {},' \
-                         ' Total Last Battle: {}'.format(row_data[0], row_data[1], row_data[2], row_data[3])
-        self.app.info(formatted_data)
-        pp_frame = Application().connect(title_re='Puzzle Pirates*')
-        window = pp_frame.window()
-        window.set_focus()
-        clipboard.EmptyClipboard()
-        clipboard.win32clipboard.OpenClipboard()
-        clipboard.win32clipboard.SetClipboardText(formatted_data)
-        clipboard.win32clipboard.CloseClipboard()
-        SendKeys('+{INS}')
-        SendKeys('{ENTER}')
+        self.pirates[pirate]['ll_this_battle'] = self.pirates[pirate]['ll_this_battle'] + 1
+        print('New LL count for {} is {}'.format(pirate, self.pirates[pirate]['ll_this_battle']))
+        row_data = [pirate, self.pirates[pirate]['ll_total'], self.pirates[pirate]['ll_average'],
+                    self.pirates[pirate]['ll_last_battle'], self.pirates[pirate]['ll_this_battle']]
+        print('Data to be added: {}'.format(row_data))
+
+        self.app.queueFunction(self.app.replaceTableRow, 'PirateStats', self.pirates[pirate]['row_id'], row_data)
+        self.app.stopSubWindow()
 
     def log_parser(self, lines):
         if lines:
@@ -171,6 +188,34 @@ class GreedyBashCounter(object):
                     self.app.queueFunction(self.update_major_stats)
             sleep(0.5)
 
+    def reset_stats(self):
+        self.total_lls = 0
+        self.average_lls = 0
+        self.last_battle_lls = 0
+        self.this_battle_lls = 0
+        self.battle_count = 0
+        self.app.setLabel('LLTotal', str(self.total_lls))
+        self.app.setLabel('LLLastBattle', str(self.last_battle_lls))
+        self.app.setLabel('LLAverage', str(self.average_lls))
+        self.app.setLabel('BattleCount', str(self.battle_count))
+        self.app.setLabel('LLThisBattle', str(self.this_battle_lls))
+        self.app.deleteAllTableRows("PirateStats")
+        self.pirates = {
+            'row_ids': [-1]
+        }
+        print('Stats Reset')
+
+    def start_stop(self, btn):
+        if btn == "Start" and not self.active:
+            self.active = True
+            self.app.setButtonState("Start", "disabled")
+            self.app.setButtonState("Stop", "active")
+            self.app.thread(self.read_log)
+        elif btn == "Stop" and self.active:
+            self.active = False
+            self.app.setButtonState("Start", "active")
+            self.app.setButtonState("Stop", "disabled")
+
     def update_major_stats(self):
         self.battle_count = self.battle_count + 1
         self.last_battle_lls = self.this_battle_lls
@@ -197,22 +242,24 @@ class GreedyBashCounter(object):
                 self.app.queueFunction(self.app.replaceTableRow, 'PirateStats',
                                        self.pirates[pirate]['row_id'], row_data)
 
-    def reset_stats(self):
-        self.total_lls = 0
-        self.average_lls = 0
-        self.last_battle_lls = 0
+    # SubWindow Functions
+    def clear_this_battle_lls(self):
         self.this_battle_lls = 0
-        self.battle_count = 0
-        self.app.setLabel('LLTotal', str(self.total_lls))
-        self.app.setLabel('LLLastBattle', str(self.last_battle_lls))
-        self.app.setLabel('LLAverage', str(self.average_lls))
-        self.app.setLabel('BattleCount', str(self.battle_count))
-        self.app.setLabel('LLThisBattle', str(self.this_battle_lls))
-        self.app.deleteAllTableRows("PirateStats")
-        self.pirates = {
-            'row_ids': [-1]
-        }
-        print('Stats Reset')
+        self.app.queueFunction(self.app.setLabel, 'LLThisBattle', str(self.this_battle_lls))
+
+    def fix_loss(self):
+        self.total_lls = int(self.app.getEntry('LL'))
+        self.battle_count = int(self.app.getEntry('TB'))
+        self.app.queueFunction(self.app.setLabel, 'BattleCount', str(self.battle_count))
+        self.app.queueFunction(self.app.setLabel, 'LLTotal', str(self.total_lls))
+        self.hide_override_window()
+
+
+    def hide_override_window(self):
+        self.app.hideSubWindow('Override')
+
+    def show_override_window(self):
+        self.app.showSubWindow('Override')
 
     def pirate_stat_window(self):
         window = self.app.getSetting("Per Pirate Statistics", default=False)
@@ -226,34 +273,36 @@ class GreedyBashCounter(object):
 
             self.app.saveSettings()
 
-    def individual_pirate_stat(self, pirate):
-        print('Updating Individual Pirate Stat for {}'.format(pirate))
-        self.app.openSubWindow("Per Pirate Statistics")
-        if not self.pirates.get(pirate):
-            print('Creating Pirate Dictionary')
-            self.pirates[pirate] = {
-                'row_id': 0,
-                'll_this_battle': 0,
-                'll_total': 0,
-                'll_average': 0,
-                'll_last_battle': 0
-            }
-            self.pirates[pirate]['row_id'] = max(self.pirates['row_ids']) + 1
-            self.pirates['row_ids'].append(self.pirates[pirate]['row_id'])
-            print('New pirate {} added with row_id {}'.format(pirate, self.pirates[pirate]['row_id']))
-            row_data = [pirate, self.pirates[pirate]['ll_total'], self.pirates[pirate]['ll_average'],
-                        self.pirates[pirate]['ll_last_battle'], self.pirates[pirate]['ll_this_battle']]
-            self.app.addTableRow('PirateStats', row_data)
-            print('Generic Pirate Row Created')
+    # Send To Puzzle Pirates Functions
+    def send_pirate_stats(self, row_id):
+        row_data = self.app.getTableRow('PirateStats', row_id)
+        formatted_data = 'Pirate: {}, Total LLs: {}, Average LLs: {},' \
+                         ' Total Last Battle: {}'.format(row_data[0], row_data[1], row_data[2], row_data[3])
+        self.app.info(formatted_data)
+        pp_frame = Application().connect(title_re='Puzzle Pirates*')
+        window = pp_frame.window()
+        window.set_focus()
+        clipboard.EmptyClipboard()
+        clipboard.win32clipboard.OpenClipboard()
+        clipboard.win32clipboard.SetClipboardText(formatted_data)
+        clipboard.win32clipboard.CloseClipboard()
+        SendKeys('+{INS}')
+        SendKeys('{ENTER}')
 
-        self.pirates[pirate]['ll_this_battle'] = self.pirates[pirate]['ll_this_battle'] + 1
-        print('New LL count for {} is {}'.format(pirate, self.pirates[pirate]['ll_this_battle']))
-        row_data = [pirate, self.pirates[pirate]['ll_total'], self.pirates[pirate]['ll_average'],
-                    self.pirates[pirate]['ll_last_battle'], self.pirates[pirate]['ll_this_battle']]
-        print('Data to be added: {}'.format(row_data))
-
-        self.app.queueFunction(self.app.replaceTableRow, 'PirateStats', self.pirates[pirate]['row_id'], row_data)
-        self.app.stopSubWindow()
+    def send_totals(self):
+        formatted_data = 'Total LLs: {}, Average LLs: {}, ' \
+                         'LLs Last Battle: {}, Battles: {}'.format(self.total_lls, self.average_lls,
+                                                                   self.last_battle_lls, self.battle_count)
+        self.app.info(formatted_data)
+        pp_frame = Application().connect(title_re='Puzzle Pirates*')
+        window = pp_frame.window()
+        window.set_focus()
+        clipboard.EmptyClipboard()
+        clipboard.win32clipboard.OpenClipboard()
+        clipboard.win32clipboard.SetClipboardText(formatted_data)
+        clipboard.win32clipboard.CloseClipboard()
+        SendKeys('+{INS}')
+        SendKeys('{ENTER}')
 
 if __name__ == "__main__":
     program = GreedyBashCounter()
