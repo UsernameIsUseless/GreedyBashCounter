@@ -21,6 +21,7 @@ table_headers = [["Pirate", "LL Total", "LL Avg", "TLB", "TTB"]]
 
 version = '1.2'
 
+
 class GreedyBashCounter(object):
     active = False
     total_lls, average_lls, last_battle_lls, this_battle_lls, battle_count = 0, 0, 0, 0, 0
@@ -79,11 +80,11 @@ class GreedyBashCounter(object):
                           actionButton='Send')
         self.app.stopSubWindow()
 
-        self.app.addMenuList('Menu', ['About', 'Clear TB Counters'],[self.menu, self.clear_this_battle_lls])
+        self.app.addMenuList('Menu', ['About', 'Clear TB Counters'], [self.menu, self.clear_this_battle_lls])
 
         self.app.startSubWindow('About GBC', modal=True)
-        #self.app.setSize(555, 555)
-        #self.app.setResizable(canResize=False)
+        # self.app.setSize(555, 555)
+        # self.app.setResizable(canResize=False)
         self.app.addLabel('a1', "GreedyBashCalculator")
         self.app.addHorizontalSeparator()
         self.app.addLabel('a2', "Created by:")
@@ -102,7 +103,6 @@ class GreedyBashCounter(object):
         self.app.addButton('Cancel', self.hide_override_window, 1, 1)
         self.app.stopLabelFrame()
         self.app.stopSubWindow()
-
 
         self.app.go()
 
@@ -254,7 +254,6 @@ class GreedyBashCounter(object):
         self.app.queueFunction(self.app.setLabel, 'LLTotal', str(self.total_lls))
         self.hide_override_window()
 
-
     def hide_override_window(self):
         self.app.hideSubWindow('Override')
 
@@ -303,6 +302,7 @@ class GreedyBashCounter(object):
         clipboard.win32clipboard.CloseClipboard()
         SendKeys('+{INS}')
         SendKeys('{ENTER}')
+
 
 if __name__ == "__main__":
     program = GreedyBashCounter()
