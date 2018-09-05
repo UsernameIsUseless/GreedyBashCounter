@@ -19,7 +19,7 @@ fight_began_string = 'A melee breaks out between the crews!'
 
 table_headers = [["Pirate", "LL Total", "LL Avg", "TLB", "TTB"]]
 
-version = '1.2'
+version = '2.0'
 
 
 class GreedyBashCounter(object):
@@ -93,14 +93,15 @@ class GreedyBashCounter(object):
         self.app.stopSubWindow()
 
         self.app.startSubWindow("Log Folder", modal=True)
+        self.app.setSticky('ew')
         self.app.addFileEntry('log_folder_entry')
         if self.app.getSetting('log_folder'):
             self.log_folder = self.app.getSetting('log_folder')
             self.app.setEntry('log_folder_entry', self.log_folder)
         else:
             self.log_folder = None
-        self.app.addButton('Save', self.save_log_folder, 1, 0)
-        self.app.addButton('Close', self.close_log_window, 1, 1)
+        self.app.addButton('Save', self.save_log_folder)
+        self.app.addButton('Close', self.close_log_window)
         self.app.stopSubWindow()
 
         self.app.startSubWindow('About GBC', modal=True)
