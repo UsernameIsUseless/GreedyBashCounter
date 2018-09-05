@@ -87,7 +87,7 @@ class GreedyBashCounter(object):
         self.app.stopLabelFrame()
 
         self.app.startSubWindow("Per Pirate Statistics", transient=True)
-        self.app.setResizable(canResize=False)
+        self.app.setResizable(canResize=True)
         self.app.addTable('PirateStats', table_headers, action=self.send_pirate_stats, actionHeading='PP',
                           actionButton='Send')
         self.app.stopSubWindow()
