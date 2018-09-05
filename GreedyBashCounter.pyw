@@ -19,7 +19,7 @@ fight_began_string = 'A melee breaks out between the crews!'
 
 table_headers = [["Pirate", "LL Total", "LL Avg", "TLB", "TTB"]]
 
-version = '2.0'
+version = '2.0.1'
 
 
 class GreedyBashCounter(object):
@@ -35,7 +35,7 @@ class GreedyBashCounter(object):
         self.app.loadSettings()
         self.app.setTitle('GBC')
         self.app.setSize(205, 242)
-        self.app.setResizable(canResize=False)
+        self.app.setResizable(canResize=True)
         self.app.setFont(size=10)
         self.app.setIcon('media\icon.gif')
 
