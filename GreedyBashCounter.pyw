@@ -92,8 +92,11 @@ class GreedyBashCounter(object):
 
         self.app.startSubWindow("Per Pirate Statistics", transient=True)
         self.app.setResizable(canResize=True)
+        self.app.hideTitleBar()
+        self.app.addGrip()
         self.app.addTable('PirateStats', table_headers, action=self.send_pirate_stats, actionHeading='PP',
                           actionButton='Send')
+
         self.app.stopSubWindow()
 
         self.app.startSubWindow("Log Folder", modal=True)
@@ -135,18 +138,21 @@ class GreedyBashCounter(object):
 
     def log_folder(self):
         self.app.showSubWindow('Log Folder')
+
     def save_log_folder(self):
         log_folder = os.path.dirname(self.app.getEntry('log_folder_entry'))
         self.app.setSetting('log_folder', log_folder)
         self.app.saveSettings()
+
     def close_log_window(self):
         self.app.hideSubWindow('Log Folder')
 
     # Core Functions
     def get_log_list(self):
-        file_list = [ file for file in os.listdir(self.log_folder)
-                      if os.path.isfile(os.path.join(self.log_folder, file))]
-        only_log_pirate_files = [ file for file in file_list if file.endswith('.log')]
+        file_list = [file for file in os.listdir(self.log_folder)
+                     if os.path.isfile(os.path.join(self.log_folder, file))]
+        only_log_pirate_files = [file for file in file_list if file.endswith('.log')]
+
         return only_log_pirate_files
 
     def set_pirate(self, pirate):
@@ -208,7 +214,7 @@ class GreedyBashCounter(object):
         log_list = self.get_log_list()
         active_pirate_info = self.app.getLabel('PirateNameDisplay')
         active_pirate, ocean = active_pirate_info.split(' ')[0], active_pirate_info.split(' ')[2].lower()
-        active_pirate_log = [ pirate for pirate in log_list if pirate.startswith('{}_{}'.format(active_pirate, ocean)) ]
+        active_pirate_log = [pirate for pirate in log_list if pirate.startswith('{}_{}'.format(active_pirate, ocean))]
         log_file = os.path.join(self.log_folder, active_pirate_log[0])
         pygtail = Pygtail(log_file, read_from_end=True)
         while self.active:
@@ -298,16 +304,16 @@ class GreedyBashCounter(object):
         self.app.showSubWindow('Override')
 
     def pirate_stat_window(self):
-        window = self.app.getSetting("Per Pirate Statistics", default=False)
+        window = self.app.getSetting("PPSWindow")
         if not window:
             self.app.showSubWindow("Per Pirate Statistics")
-            self.app.setSetting("Per Pirate Statistics", True)
+            self.app.setSetting("PPSWindow", True)
 
         else:
             self.app.hideSubWindow("Per Pirate Statistics")
-            self.app.setSetting("Per Pirate Statistics", False)
+            self.app.setSetting("PPSWindow", False)
 
-            self.app.saveSettings()
+        self.app.saveSettings()
 
     # Send To Puzzle Pirates Functions
     def send_pirate_stats(self, row_id):
