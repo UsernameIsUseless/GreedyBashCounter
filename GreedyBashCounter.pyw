@@ -44,11 +44,15 @@ class GreedyBashCounter(object):
         self.app.createMenu('Pirates')
         self.log_folder = self.app.getSetting('log_folder')
         if self.log_folder:
-            pirates = [ pirate.split('_')[0] for pirate in self.get_log_list() ]
+            log_list = self.get_log_list()
+            pirates = []
+            for log in log_list:
+                pirate_info = log.split('_')
+                pirates.append((pirate_info[0], pirate_info[1]))
 
-            for pirate in sorted(pirates):
-                self.app.addMenuItem('Pirates', pirate, self.set_pirate)
-            pnd = pirates[0]
+            for pirate, ocean in pirates:
+                self.app.addMenuItem('Pirates', '{} - {}'.format(pirate, ocean.capitalize()), self.set_pirate)
+            pnd = '{} - {}'.format(pirates[0][0], pirates[0][1].capitalize())
         else:
             self.app.addMenuItem('Pirates', 'None')
             pnd = 'Pirate not set'
@@ -105,7 +109,7 @@ class GreedyBashCounter(object):
         self.app.stopSubWindow()
 
         self.app.startSubWindow('About GBC', modal=True)
-        self.app.addLabel('a1', "GreedyBashCalculator")
+        self.app.addLabel('a1', "GreedyBashCounter")
         self.app.addHorizontalSeparator()
         self.app.addLabel('a2', "Created by:")
         self.app.addLabel('a3', "Cajun of Obsidian")
@@ -202,8 +206,9 @@ class GreedyBashCounter(object):
 
     def read_log(self):
         log_list = self.get_log_list()
-        active_pirate = self.app.getLabel('PirateNameDisplay')
-        active_pirate_log = [ pirate for pirate in log_list if pirate.startswith(active_pirate) ]
+        active_pirate_info = self.app.getLabel('PirateNameDisplay')
+        active_pirate, ocean = active_pirate_info.split(' ')[0], active_pirate_info.split(' ')[2].lower()
+        active_pirate_log = [ pirate for pirate in log_list if pirate.startswith('{}_{}'.format(active_pirate, ocean)) ]
         log_file = os.path.join(self.log_folder, active_pirate_log[0])
         pygtail = Pygtail(log_file, read_from_end=True)
         while self.active:
@@ -307,10 +312,12 @@ class GreedyBashCounter(object):
     # Send To Puzzle Pirates Functions
     def send_pirate_stats(self, row_id):
         row_data = self.app.getTableRow('PirateStats', row_id)
+        active_pirate_info = str(self.app.getLabel('PirateNameDisplay')).split(' ')
+        title_re = 'Puzzle Pirates - {} on the {} ocean'.format(active_pirate_info[0], active_pirate_info[2])
         formatted_data = 'Pirate: {}, Total LLs: {}, Average LLs: {},' \
                          ' Total Last Battle: {}'.format(row_data[0], row_data[1], row_data[2], row_data[3])
         self.app.info(formatted_data)
-        pp_frame = Application().connect(title_re='Puzzle Pirates*')
+        pp_frame = Application().connect(title_re=title_re)
         window = pp_frame.window()
         window.set_focus()
         clipboard.EmptyClipboard()
@@ -325,7 +332,9 @@ class GreedyBashCounter(object):
                          'LLs Last Battle: {}, Battles: {}'.format(self.total_lls, self.average_lls,
                                                                    self.last_battle_lls, self.battle_count)
         self.app.info(formatted_data)
-        pp_frame = Application().connect(title_re='Puzzle Pirates*')
+        active_pirate_info = str(self.app.getLabel('PirateNameDisplay')).split(' ')
+        title_re = 'Puzzle Pirates - {} on the {} ocean'.format(active_pirate_info[0], active_pirate_info[2])
+        pp_frame = Application().connect(title_re=title_re)
         window = pp_frame.window()
         window.set_focus()
         clipboard.EmptyClipboard()
