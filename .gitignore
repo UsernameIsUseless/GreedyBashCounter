@@ -6,3 +6,4 @@ test_log.log.offset
 GreedyBashCounter.spec
 build/
 dist/
+pybuild.bat
