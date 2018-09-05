@@ -19,7 +19,7 @@ fight_began_string = 'A melee breaks out between the crews!'
 
 table_headers = [["Pirate", "LL Total", "LL Avg", "TLB", "TTB"]]
 
-version = '2.0.1'
+version = '2.1'
 
 
 class GreedyBashCounter(object):
