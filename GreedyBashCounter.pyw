@@ -38,17 +38,29 @@ class GreedyBashCounter(object):
         self.app.setResizable(canResize=False)
         self.app.setFont(size=10)
         self.app.setIcon('media\icon.gif')
-        self.app.addEntry("File", 0, 0)
-        self.app.setEntryState("File", "disabled")
-        self.app.setEntry('File', self.app.getSetting('log_path', default=''))
-        self.app.addButton("Set Log", self.get_log, 0, 1)
+
+        self.app.addMenuList('Menu', ['Log Folder', 'About', 'Clear TB Counters'],
+                             [self.log_folder, self.menu, self.clear_this_battle_lls])
+        self.app.createMenu('Pirates')
+        self.log_folder = self.app.getSetting('log_folder')
+        if self.log_folder:
+            pirates = [ pirate.split('_')[0] for pirate in self.get_log_list() ]
+
+            for pirate in sorted(pirates):
+                self.app.addMenuItem('Pirates', pirate, self.set_pirate)
+            pnd = pirates[0]
+        else:
+            self.app.addMenuItem('Pirates', 'None')
+            pnd = 'Pirate not set'
+        self.app.startLabelFrame("PirateNameFrame", hideTitle=True, colspan=2)
+        self.app.setSticky('ew')
+        self.app.addLabel('PirateNameDisplay', pnd)
+        self.app.stopLabelFrame()
 
         self.app.startLabelFrame("Log Monitoring", colspan=2)
         self.app.setSticky('ew')
         self.app.addButton("Start", self.start_stop, 0, 0)
         self.app.addButton("Stop", self.start_stop, 0, 1)
-        if not self.app.getSetting('log_path', default=''):
-            self.app.setButtonState("Start", "disabled")
         self.app.addButton("Reset", self.reset_stats, 1, 0)
         self.app.addButton('Override', self.show_override_window, 1, 1)
         self.app.setButtonState("Stop", "disabled")
@@ -80,11 +92,18 @@ class GreedyBashCounter(object):
                           actionButton='Send')
         self.app.stopSubWindow()
 
-        self.app.addMenuList('Menu', ['About', 'Clear TB Counters'], [self.menu, self.clear_this_battle_lls])
+        self.app.startSubWindow("Log Folder", modal=True)
+        self.app.addFileEntry('log_folder_entry')
+        if self.app.getSetting('log_folder'):
+            self.log_folder = self.app.getSetting('log_folder')
+            self.app.setEntry('log_folder_entry', self.log_folder)
+        else:
+            self.log_folder = None
+        self.app.addButton('Save', self.save_log_folder, 1, 0)
+        self.app.addButton('Close', self.close_log_window, 1, 1)
+        self.app.stopSubWindow()
 
         self.app.startSubWindow('About GBC', modal=True)
-        # self.app.setSize(555, 555)
-        # self.app.setResizable(canResize=False)
         self.app.addLabel('a1', "GreedyBashCalculator")
         self.app.addHorizontalSeparator()
         self.app.addLabel('a2', "Created by:")
@@ -103,22 +122,30 @@ class GreedyBashCounter(object):
         self.app.addButton('Cancel', self.hide_override_window, 1, 1)
         self.app.stopLabelFrame()
         self.app.stopSubWindow()
-
         self.app.go()
 
     # Menus
     def menu(self):
         self.app.showSubWindow('About GBC')
 
+    def log_folder(self):
+        self.app.showSubWindow('Log Folder')
+    def save_log_folder(self):
+        log_folder = os.path.dirname(self.app.getEntry('log_folder_entry'))
+        self.app.setSetting('log_folder', log_folder)
+        self.app.saveSettings()
+    def close_log_window(self):
+        self.app.hideSubWindow('Log Folder')
+
     # Core Functions
-    def get_log(self):
-        log = self.app.openBox(title="Get Puzzle Pirates Log", dirName=None, fileTypes=[('log', '*.log')],
-                               asFile=False, parent=None)
-        if not self.app.getEntry('File'):
-            self.app.setSetting('log_path', log)
-            self.app.saveSettings()
-            self.app.setEntry("File", log)
-            self.app.setButtonState("Start", "active")
+    def get_log_list(self):
+        file_list = [ file for file in os.listdir(self.log_folder)
+                      if os.path.isfile(os.path.join(self.log_folder, file))]
+        only_log_pirate_files = [ file for file in file_list if file.endswith('.log')]
+        return only_log_pirate_files
+
+    def set_pirate(self, pirate):
+        self.app.setLabel('PirateNameDisplay', pirate)
 
     def individual_pirate_stat(self, pirate):
         print('Updating Individual Pirate Stat for {}'.format(pirate))
@@ -173,7 +200,11 @@ class GreedyBashCounter(object):
             return greedy_sanitized_lines
 
     def read_log(self):
-        pygtail = Pygtail(self.app.getEntry("File"), read_from_end=True)
+        log_list = self.get_log_list()
+        active_pirate = self.app.getLabel('PirateNameDisplay')
+        active_pirate_log = [ pirate for pirate in log_list if pirate.startswith(active_pirate) ]
+        log_file = os.path.join(self.log_folder, active_pirate_log[0])
+        pygtail = Pygtail(log_file, read_from_end=True)
         while self.active:
             raw_lines = pygtail.read()
             if raw_lines:
