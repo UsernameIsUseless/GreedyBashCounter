@@ -16,6 +16,8 @@ greedy_strings = [
 battle_ended_string = 'as your initial cut of the booty!'
 battle_began_string = 'intercepted'
 fight_began_string = 'A melee breaks out between the crews!'
+ship_spawned_string = 'You intercepted the '
+ship_attacked_string = 'You have been intercepted by '
 
 table_headers = [["Pirate", "LL Total", "LL Avg", "TLB", "TTB"]]
 
@@ -26,6 +28,7 @@ class GreedyBashCounter(object):
     active = False
     total_lls, average_lls, last_battle_lls, this_battle_lls, battle_count = 0, 0, 0, 0, 0
     battle_started, battle_ended, fight_started = False, False, False
+    last_ship=' '
     pirates = {
         'row_ids': [-1]
     }
@@ -82,6 +85,8 @@ class GreedyBashCounter(object):
         self.app.addLabel("LLThisBattle", '0', 1, 3)
         self.app.addLabel("BattleCountTitle", 'Battles:', 2, 0)
         self.app.addLabel("BattleCount", '0', 2, 1)
+        self.app.addLabel("LastShipTitle", 'Last Ship:', 2, 2)
+        self.app.addLabel("LastShip", 'none', 2, 3)
         self.app.stopLabelFrame()
 
         self.app.startLabelFrame('Buttons', hideTitle=True, colspan=2)
@@ -205,6 +210,10 @@ class GreedyBashCounter(object):
                 self.battle_started = True
                 self.battle_ended = False
                 print('battle began')
+                if ship_spawned_string in line
+                    this_battle_ship=sub( ship_spawned_string , '', line)
+                elif ship_attacked_string in line
+                    this_battle_ship=sub( ship_attacked_string , '', line)
             elif [line for line in sanitized_lines if battle_began_string in line]:
                 self.fight_started = True
             greedy_sanitized_lines = [line for line in sanitized_lines if any(s for s in greedy_strings if s in line)]
@@ -241,6 +250,7 @@ class GreedyBashCounter(object):
         self.app.setLabel('LLLastBattle', str(self.last_battle_lls))
         self.app.setLabel('LLAverage', str(self.average_lls))
         self.app.setLabel('BattleCount', str(self.battle_count))
+        self.app.setLabel('LastShip', str(self.last_ship))
         self.app.setLabel('LLThisBattle', str(self.this_battle_lls))
         self.app.deleteAllTableRows("PirateStats")
         self.pirates = {
@@ -264,11 +274,13 @@ class GreedyBashCounter(object):
         self.last_battle_lls = self.this_battle_lls
         self.total_lls = self.total_lls + self.this_battle_lls
         self.average_lls = round(self.total_lls / self.battle_count, 1)
+        self.last_ship=self.this_battle_ship
         self.this_battle_lls = 0
         self.app.setLabel('LLTotal', str(self.total_lls))
         self.app.setLabel('LLLastBattle', str(self.last_battle_lls))
         self.app.setLabel('LLAverage', str(self.average_lls))
         self.app.setLabel('BattleCount', str(self.battle_count))
+        self.app.setLabel('LastShip', str(self.last_ship))
         self.app.setLabel('LLThisBattle', str(self.this_battle_lls))
         self.battle_ended = False
 
